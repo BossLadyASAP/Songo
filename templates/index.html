@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Songo - Jeu Multijoueur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Songo Logo">
+            <h1>SONGO</h1>
+        </div>
+        <div class="credits">
+            Réalisé par : <strong>MATAGNE DASSE PRESLIE CHANEL</strong><br>
+            Licence 2 - Université de Yaoundé I
+        </div>
+    </header>
+
+    <main>
+        <!-- WELCOME SCREEN -->
+        <div id="welcome-screen" class="screen active">
+            <h2 class="welcome-title">🎮 SONGO</h2>
+            <p class="welcome-subtitle">Le jeu de stratégie africain en ligne</p>
+            <div class="welcome-buttons">
+                <button class="btn-primary" onclick="goToAvatarScreen()">Créer une partie</button>
+                <button class="btn-secondary" onclick="goToRoomScreen('join')">Rejoindre une partie</button>
+                <button class="btn-secondary" onclick="showHelp()">Aide & Règles</button>
+            </div>
+        </div>
+
+        <!-- AVATAR SELECTION SCREEN -->
+        <div id="avatar-screen" class="screen">
+            <div class="avatar-selection">
+                <h2>Choisissez votre avatar</h2>
+                <div class="avatar-options">
+                    <div class="avatar-option" onclick="selectAvatar('boy')">
+                        <img src="{{ url_for('static', filename='images/avatar_boy.png') }}" alt="Garçon">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('girl')">
+                        <img src="{{ url_for('static', filename='images/avatar_girl.png') }}" alt="Fille">
+                    </div>
+                </div>
+                <input type="text" class="name-input" id="player-name" placeholder="Votre nom..." maxlength="20">
+                <div class="control-row">
+                    <button class="btn-primary" onclick="createRoom()">Créer une partie</button>
+                    <button class="btn-secondary btn-small" onclick="goToWelcome()">Retour</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROOM SELECTION SCREEN -->
+        <div id="room-screen" class="screen">
+            <div class="avatar-selection">
+                <h2>Rejoindre une partie</h2>
+                <div class="avatar-options">
+                    <div class="avatar-option" onclick="selectAvatar('boy')">
+                        <img src="{{ url_for('static', filename='images/avatar_boy.png') }}" alt="Garçon">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('girl')">
+                        <img src="{{ url_for('static', filename='images/avatar_girl.png') }}" alt="Fille">
+                    </div>
+                </div>
+                <input type="text" class="name-input" id="player-name-join" placeholder="Votre nom..." maxlength="20">
+                <input type="text" class="room-input" id="room-code-input" placeholder="Code de la salle (ex: A1B2C3D4)" maxlength="8">
+                <div class="control-row">
+                    <button class="btn-primary" onclick="joinRoom()">Rejoindre</button>
+                    <button class="btn-secondary btn-small" onclick="goToWelcome()">Retour</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WAITING SCREEN -->
+        <div id="waiting-screen" class="screen">
+            <div class="avatar-selection">
+                <h2>En attente du deuxième joueur...</h2>
+                <div class="room-code-display" id="room-code-display"></div>
+                <p style="text-align: center; color: #666; margin: 20px 0;">Partagez ce code avec votre ami</p>
+                <div id="waiting-players" style="margin: 20px 0;"></div>
+                <button class="btn-secondary" onclick="goToWelcome()">Annuler</button>
+            </div>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="screen">
+            <div class="status-message info" id="status-message"></div>
+
+            <div class="game-header">
+                <div class="player-card" id="player-north-card">
+                    <img src="" alt="Avatar" class="player-avatar">
+                    <div class="player-name" id="player-north-name"></div>
+                    <div class="player-score" id="player-north-score">0</div>
+                </div>
+                <div class="vs-text">VS</div>
+                <div class="player-card" id="player-south-card">
+                    <img src="" alt="Avatar" class="player-avatar">
+                    <div class="player-name" id="player-south-name"></div>
+                    <div class="player-score" id="player-south-score">0</div>
+                </div>
+            </div>
+
+            <div class="board-container">
+                <div class="board">
+                    <!-- Rangée Nord -->
+                    <div class="row" id="row-north">
+                        <div class="hole" data-index="0"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="1"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="2"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="3"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="4"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="5"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="6"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                    </div>
+                    <!-- Rangée Sud -->
+                    <div class="row" id="row-south">
+                        <div class="hole" data-index="13"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="12"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="11"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="10"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="9"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="8"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                        <div class="hole" data-index="7"><div class="seeds-visual"></div><span class="seed-count">5</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-row">
+                    <button class="btn-hint" id="btn-hint" onclick="getHint()">💡 Indice</button>
+                    <button class="btn-secondary btn-small" onclick="showHelp()">Aide</button>
+                </div>
+                <button class="btn-primary" id="btn-reset" onclick="resetGame()" style="display: none;">Nouvelle partie</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- HELP MODAL -->
+    <div class="modal" id="help-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHelp()">&times;</span>
+            <h2>Comment jouer au Songo</h2>
+            <p><strong>But :</strong> Capturer au moins 40 graines sur les 70 disponibles.</p>
+            
+            <h3>Mécanique du jeu</h3>
+            <ul>
+                <li>Chaque joueur dispose de 7 cases avec 5 graines au départ.</li>
+                <li>Ramassez les graines d'une case de votre camp et semez-les une à une dans le sens horaire.</li>
+                <li>Si vous avez plus de 13 graines, vous sautez votre case de départ lors du tour complet.</li>
+            </ul>
+            
+            <h3>Prises (Captures)</h3>
+            <ul>
+                <li>Les captures se font uniquement dans le camp adverse.</li>
+                <li>Il y a prise si la dernière graine tombe dans une case contenant 1, 2 ou 3 graines (total 2-4).</li>
+                <li>Les captures en chaîne sont possibles : les cases précédentes respectant la condition sont aussi prises.</li>
+            </ul>
+            
+            <h3>Règles spéciales</h3>
+            <ul>
+                <li><strong>Solidarité :</strong> Si le camp adverse est vide, vous devez jouer un coup qui lui apporte des graines.</li>
+                <li><strong>Interdit :</strong> Ne pas vider complètement le camp adverse.</li>
+            </ul>
+            
+            <button class="btn-primary" onclick="closeHelp()" style="width: 100%; margin-top: 20px;">Fermer</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
