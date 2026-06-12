@@ -10,7 +10,7 @@ from songo_engine import SongoGame
  
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'songo_secret_key_2024'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
  
 # Stockage des salons et des parties
 game_rooms = {}
